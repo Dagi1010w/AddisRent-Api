@@ -13,7 +13,7 @@ class BookingRequestPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->is_admin;
     }
 
     /**

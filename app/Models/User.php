@@ -1,28 +1,24 @@
 <?php
-
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\PersonProfile;
+use App\Models\CompanyProfile;
+use App\Models\Property;
+use Filament\Panel;
+use Filament\Models\Contracts\FilamentUser;
 
-
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens, HasRoles;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
-       'name',
+        'name',
         'email',
         'password',
         'phone_number',
@@ -31,23 +27,14 @@ class User extends Authenticatable
         'location_subcity',
         'location_specific_area',
         'type',
+        'is_admin', // make sure this exists in your users table
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -61,30 +48,25 @@ class User extends Authenticatable
         return $this->hasOne(PersonProfile::class);
     }
 
-    /**
-     * Relation to company profile (one to one).
-     */
     public function companyProfile()
     {
         return $this->hasOne(CompanyProfile::class);
     }
 
-    /**
-     * The properties that the user has favorited.
-     */
+    public function favorites(): BelongsToMany
+    {
+        return $this->belongsToMany(Property::class, 'favorites')
+                    ->withTimestamps();
+    }
 
-     public function favorites(): BelongsToMany
-     {
-         return $this->belongsToMany(Property::class, 'favorites')
-                    ->withTimestamps(); // <-- ADD THIS
-     }
+    public function properties(): BelongsToMany
+    {
+        return $this->belongsToMany(Property::class);
+    }
 
-     /**
-      * Properties that the user is related to
-      */
-      public function properties(): BelongsToMany
-      {
-          return $this->belongsToMany(Property::class);
-      }
-
+    // ✅ Required by Filament
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return (bool) $this->is_admin; // only users with is_admin = 1 can login
+    }
 }
